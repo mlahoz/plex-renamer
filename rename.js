@@ -17,7 +17,7 @@ fs.lstat(dir, function (err, stats) {
         processDir(dir);
     }
     else {
-        console.log('Invalid input directory: ', dir);
+        console.log('ERROR, invalid input directory: ', dir);
     }
 });
 
@@ -25,12 +25,12 @@ fs.lstat(dir, function (err, stats) {
 var processDir = function (dir) {
     fs.readdir(dir, function (err, files) {
         if (err) {
-            console.log('Error reading dir: ', err);
+            console.log('ERROR reading directory: ', err);
         }
         else {
             files
             .filter(function (i) {
-                return i[0] != '.';
+                return i[0] !== '.';
             })
             .map(function (i) {
                 return path.join(dir, i);
@@ -46,12 +46,10 @@ var processDir = function (dir) {
 var processFileOrDir = function (file) {
     fs.lstat(file, function (err, stats) {
         if (err) {
-            console.log('Error with file:', file);
+            console.log('ERROR stating file:', file);
         }
         else if (stats.isDirectory()) {
-            console.log('Processing directory', file, '...');
-            // Check if rename is needed
-            processDir(file);
+            checkAndProcessDir(file);
         }
         else {
             processFile(file);
@@ -59,9 +57,50 @@ var processFileOrDir = function (file) {
     });
 }
 
+// Process directory, checking name first
+var checkAndProcessDir = function (dirname) {
+    console.log('Processing directory', dirname, '...');
+
+    // Check if rename is needed
+    var newdirname = newDirName(dirname);
+    if (newdirname) {
+        fs.rename(dirname, newdirname, function (err) {
+                if (err) {
+                    console.log('ERROR renaming directory, from', dirname, 'to', newdirname);
+                }
+                else {
+                    console.log('Directory renamed, from', dirname, 'to', newdirname);
+                    processDir(newdirname);
+                }
+        });
+    }
+    else {
+        processDir(dirname);
+    }
+}
+
 // Process file
 var processFile = function (file) {
     console.log('Processing file', file, '...');
+}
+
+// Checks if new directory name is needed, undef if not
+var newDirName = function (dir) {
+    dirname = path.basename(dir);
+
+    var dir_regex = /[Ss]eason.(\d{1,2})/;
+    var r = dir_regex.exec(dirname);
+
+    if (r) {
+        var season = r[1];
+        if (season.length === 1) season = '0'.concat(season);
+
+        var fullname = path.join(path.dirname(dir), 'Season '.concat(season))
+
+        if (fullname !== dir) {
+            return fullname;
+        }
+    }
 }
 
 console.log('Bye!');
