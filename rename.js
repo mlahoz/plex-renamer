@@ -82,6 +82,24 @@ var checkAndProcessDir = function (dirname) {
 // Process file
 var processFile = function (file) {
     console.log('Processing file', file, '...');
+
+    filepath = path.parse(file);
+    filename = filepath.name;
+
+    var newfilename = newFileName(filename);
+
+    if (newfilename) {
+        var newfile = path.join(filepath.dir, newfilename.concat(filepath.ext));
+
+        fs.rename(file, newfile, function (err) {
+                if (err) {
+                    console.log('ERROR renaming file, from', file, 'to', newfile);
+                }
+                else {
+                    console.log('File renamed, from', file, 'to', newfile);
+                }
+        });
+    }
 }
 
 // Checks if new directory name is needed, undef if not
@@ -101,6 +119,27 @@ var newDirName = function (dir) {
             return fullname;
         }
     }
+}
+
+var newFileName = function (file) {
+
+    // show name - 2.3 - title
+    var regex = /(.*)(\d{1,2})\.(\d{1,2})(.*)/;
+    var r = regex.exec(file);
+    if (r) return formatFileName(r[1], r[2], r[3], r[4]);
+
+    // show name season 2 episode 3 title
+    regex = /(.*)season (\d{1,2}) episode (\d{1,2})(.*)/;
+    r = regex.exec(file);
+    if (r) return formatFileName(r[1], r[2], r[3], r[4]);
+
+}
+
+var formatFileName = function (pre, season, episode, post) {
+    if (season.length === 1) season = '0'.concat(season);
+    if (episode.length === 1) episode = '0'.concat(episode);
+
+    return [pre, 'S', season, 'E', episode, post].join('');
 }
 
 console.log('Bye!');
